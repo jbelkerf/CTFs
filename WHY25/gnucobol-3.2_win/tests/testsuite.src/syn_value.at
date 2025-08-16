@@ -1,0 +1,520 @@
+## Copyright (C) 2003-2012, 2017-2018, 2022-2023 Free Software
+## Foundation, Inc.
+## Written by Keisuke Nishida, Roger While, Simon Sobisch
+## 
+## This file is part of GnuCOBOL.
+## 
+## The GnuCOBOL compiler is free software: you can redistribute it
+## and/or modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation, either version 3 of the
+## License, or (at your option) any later version.
+## 
+## GnuCOBOL is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+## 
+## You should have received a copy of the GNU General Public License
+## along with GnuCOBOL.  If not, see <https://www.gnu.org/licenses/>.
+
+### GnuCOBOL Test Suite
+
+### ISO+IEC+1989-2002 13.16.61 VALUE clause
+
+## 13.16.61.1 General format
+
+# Format 1 (data-item): DONE
+
+AT_SETUP([bad VALUES / VALUES ARE in format-1])
+AT_KEYWORDS([VALUE])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+
+      * explicit testing in sub-fields to ensure parsing goes on
+       01  WS.
+           10  SEPX   PICTURE XX VALUES     ", ".
+           10  SEPL   PICTURE X  VALUE      LOW-VALUE.
+           10  BADIS  PICTURE 9  VALUE  ARE 1.
+           10  BADARE PICTURE 9  VALUES IS  2.
+           10  DAYS   PICTURE 99 VALUES ARE 31.
+           10  MONTHS PICTURE 99 VALUE  IS  12.
+           10  NO-OCCURS   PICTURE 99 VALUES ARE 08 15.
+
+       PROCEDURE DIVISION.
+           DISPLAY DAYS SEPX MONTHS SEPL.
+           GOBACK.
+])
+
+AT_CHECK([$COMPILE_ONLY prog.cob], [1], [],
+[prog.cob:11: error: unexpected VALUES ARE
+prog.cob:13: error: syntax error, unexpected ARE
+prog.cob:14: error: syntax error, unexpected IS
+prog.cob:15: error: unexpected VALUES ARE
+prog.cob:17: error: unexpected VALUES ARE for elementary item
+])
+
+AT_CHECK([$COMPILE_ONLY -frelax-syntax-checks prog.cob], [1], [],
+[prog.cob:11: warning: unexpected VALUES ARE
+prog.cob:13: error: syntax error, unexpected ARE
+prog.cob:14: error: syntax error, unexpected IS
+prog.cob:15: warning: unexpected VALUES ARE
+prog.cob:17: error: unexpected VALUES ARE for elementary item
+])
+
+AT_CLEANUP
+
+
+# Format 2 (table): implemented, more testcases to do
+#                   TODO: codegen-finish
+
+AT_SETUP([OCCURS too many VALUEs])
+AT_KEYWORDS([initialize VALUE])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. prog.
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+
+       01  WS.
+         05  IX1  PIC 99.
+         05  IX2  PIC 99.
+         05  IX3  PIC 99.
+         05  GRP1 OCCURS 3 TIMES.
+             10  GRPX  PIC X(99).
+         05  MONTH-IN-YEAR OCCURS 13 TIMES PICTURE X(3)
+                         VALUES "jan" "feb" "mar" "apr"
+                               "may" "jun" "jul" "aug"
+                               "sep" "oct" "nov" "dec"
+                               "Hi" "Bye" "Dog".
+         05  DAYS-IN-MONTH OCCURS 13 TIMES PICTURE 9(2) BINARY
+                         VALUES 31 28 31 30 31 30 31 31 30 31 30 31.
+         05  DAYS-MONTHS  OCCURS 2 TIMES.
+          06  DAYX-MONTHX OCCURS 4 TIMES.
+           07  DAY-MONTH  OCCURS 3 TIMES.
+             10  XXX1   PICTURE X VALUE " ".
+             10  MONTHS PICTURE X(3)
+                        VALUES "Jan" "Feb" "Mar" "Apr"
+                               "May" "Jun" "Jul" "Aug"
+                               "Sep" "Oct" "Nov" "Dec"
+                               "JAN" "FEB" "MAR" "APR"
+                               "MAY" "JUN" "JUL" "AUG"
+                               "SEP" "OCT" "NOV" "DEC" "Bye".
+             10  SEPX   PICTURE XX VALUE ", ".
+             10  DAYS   PICTURE 99
+                        VALUES 31 28 31 30 31 30 31 31 30 31 30 31
+                               91 28 91 90 91 90 91 91 90 91 90 91.
+             10  PER    PICTURE X VALUE ".".
+           07  FLR    PICTURE X(4) VALUES " <A>" " <B>" " <C>" " <D>"
+                                  " <E>" " <F>" " <G>" " <H>" " <*>".
+
+       PROCEDURE DIVISION.
+
+       INIT-RTN.
+           DISPLAY "Simple OCCURS with multi VALUES".
+           PERFORM VARYING IX1 FROM 1 BY 1 UNTIL IX1 > 13
+              DISPLAY IX1 ": "
+                      MONTH-IN-YEAR (IX1) " has "
+                      DAYS-IN-MONTH (IX1) " days"
+              END-DISPLAY
+           END-PERFORM.
+           DISPLAY "Complex OCCURS with multi VALUES".
+           PERFORM VARYING IX3 FROM 1 BY 1 UNTIL IX3 > 2
+             PERFORM VARYING IX2 FROM 1 BY 1 UNTIL IX2 > 4
+                 DISPLAY IX3 "-" IX2 ": "
+                         DAYX-MONTHX (IX3, IX2)
+                 END-DISPLAY
+             END-PERFORM
+           END-PERFORM.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY prog.cob], [1], [],
+[prog.cob:15: error: elements in VALUE clause for 'MONTH-IN-YEAR' (15) exceed max amount (13)
+prog.cob:26: error: elements in VALUE clause for 'MONTHS' (25) exceed max amount (24)
+prog.cob:38: error: elements in VALUE clause for 'FLR' (9) exceed max amount (8)
+])
+
+AT_CLEANUP
+
+# Format 3 (condition-name): TODO
+
+# Format 4 (report-section): TODO
+
+# Format 5 (content-validation-entry): TODO
+
+## 13.16.61.2 Syntax rules
+
+
+# 1) TODO
+
+
+# 2) TODO
+
+AT_SETUP([Numeric item (integer)])
+AT_KEYWORDS([value size])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 X-SPACE       PIC 999 VALUE SPACE.
+       01 X-ABC         PIC 999 VALUE "abc".
+       01 X-12-3        PIC 999 VALUE 12.3.
+       01 X-123         PIC 999 VALUE 123.
+       01 X-1234        PIC 999 VALUE 1234.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY prog.cob], [1], [],
+[prog.cob:6: error: invalid VALUE clause
+prog.cob:7: warning: numeric value is expected
+prog.cob:8: warning: value size exceeds data size
+prog.cob:10: warning: value size exceeds data size
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([Numeric item (non-integer)])
+AT_KEYWORDS([value size])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 X-12          PIC 99V9 VALUE 12.
+       01 X-123         PIC 99V9 VALUE 123.
+       01 X-12-3        PIC 99V9 VALUE 12.3.
+       01 X-12-34       PIC 99V9 VALUE 12.34.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY prog.cob], [0], [],
+[prog.cob:7: warning: value size exceeds data size
+prog.cob:9: warning: value size exceeds data size
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([Numeric item with picture P])
+AT_KEYWORDS([value size])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 X-99PP-0      PIC 99PP VALUE 0.
+       01 X-99PP-1200   PIC 99PP VALUE 1200.
+       01 X-99PP-1230   PIC 99PP VALUE 1230.
+       01 X-99PP-10000  PIC 99PP VALUE 10000.
+       01 X-PP99--0     PIC PP99 VALUE .0.
+       01 X-PP99--0012  PIC PP99 VALUE .0012.
+       01 X-PP99--0123  PIC PP99 VALUE .0123.
+       01 X-PP99--00001 PIC PP99 VALUE .00001.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY prog.cob], [0], [],
+[prog.cob:8: warning: value does not fit the picture string
+prog.cob:9: warning: value size exceeds data size
+prog.cob:12: warning: value does not fit the picture string
+prog.cob:13: warning: value size exceeds data size
+])
+
+AT_CLEANUP
+
+
+# 3) DONE
+
+AT_SETUP([Signed numeric literal])
+AT_KEYWORDS([value])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 X-9P          PIC 9  VALUE +1.
+       01 X-9N          PIC 9  VALUE -1.
+       01 X-S9P         PIC S9 VALUE +1.
+       01 X-S9N         PIC S9 VALUE -1.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY prog.cob], [1], [],
+[prog.cob:6: error: data item not signed
+prog.cob:7: error: data item not signed
+])
+
+AT_CLEANUP
+
+
+# 4) DONE
+
+AT_SETUP([Alphabetic item])
+AT_KEYWORDS([value size])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 X-123         PIC AAA VALUE 123.
+       01 X-ZERO        PIC AAA VALUE ZERO.
+       01 X-AB1         PIC AAA VALUE "ab1".
+       01 X-ABC         PIC AAA VALUE "abc".
+       01 X-ABCD        PIC AAA VALUE "abcd".
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY prog.cob], [1], [],
+[prog.cob:6: warning: alphanumeric value is expected
+prog.cob:7: error: invalid VALUE clause
+prog.cob:8: warning: value does not fit the picture string
+prog.cob:10: warning: value size exceeds data size
+prog.cob:10: note: value size is 4
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([Alphanumeric item])
+AT_KEYWORDS([value size])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 X-ABC         PIC XXX VALUE "abc".
+       01 X-ABCD        PIC XXX VALUE "abcd".
+       01 X-SPACE       PIC XXX VALUE "abc   ".
+       01 X-123         PIC XXX VALUE 123.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY prog.cob], [0], [],
+[prog.cob:7: warning: value size exceeds data size
+prog.cob:7: note: value size is 4
+prog.cob:8: warning: value does not fit the picture string
+prog.cob:9: warning: alphanumeric value is expected
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([Alphanumeric group item])
+AT_KEYWORDS([value size])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 G-1           VALUE 123.
+         02 X           PIC XXX.
+       01 G-2           VALUE "abc".
+         02 X           PIC XXX.
+       01 G-3           VALUE "abcd".
+         02 X           PIC XXX.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY prog.cob], [0], [],
+[prog.cob:6: warning: alphanumeric value is expected
+prog.cob:10: warning: value size exceeds data size
+prog.cob:10: note: value size is 4
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([National item])
+AT_KEYWORDS([value size])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 N-ABC         PIC NNN VALUE N"abc".
+       01 N-ABCD        PIC NNN VALUE N"abcd".
+       01 N-SPACE       PIC NNN VALUE N"abc   ".
+       01 X-123         PIC NNN VALUE 123.
+       01 X-ABC         PIC NNN VALUE "abc".
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY -Wno-unfinished prog.cob], [0], [],
+[prog.cob:7: warning: value size exceeds data size
+prog.cob:7: note: value size is 4
+prog.cob:8: warning: value does not fit the picture string
+prog.cob:9: warning: national value is expected
+prog.cob:10: warning: national value is expected
+])
+
+AT_CLEANUP
+
+
+# 5) TODO
+
+# 6) TODO
+
+# 7) DONE
+
+
+# 8) DONE
+
+AT_SETUP([Numeric-edited item])
+AT_KEYWORDS([value editing size])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 X-SPACE       PIC **99.00  VALUE SPACE.
+       01 X-123         PIC **999.00 VALUE 123.
+       01 X-ABC         PIC **99.00  VALUE "abc".
+       01 X-MATCH       PIC **99.00  VALUE "*123.00".
+       01 X-OVERFLOW    PIC **99.00  VALUE "*123.000".
+       PROCEDURE        DIVISION.
+           MOVE     320.00 TO X-123
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY prog.cob], [0], [],
+[prog.cob:10: warning: value size exceeds data size
+prog.cob:10: note: value size is 8
+])
+AT_CHECK([$COMPILE_ONLY -std=ibm-strict prog.cob], [1], [],
+[prog.cob:7: error: numeric literal in VALUE clause of numeric-edited item used
+prog.cob:10: warning: value size exceeds data size
+prog.cob:10: note: value size is 8
+])
+AT_CHECK([$COMPILE_ONLY -std=ibm prog.cob], [0], [],
+[prog.cob:7: warning: numeric literal in VALUE clause of numeric-edited item used
+prog.cob:10: warning: value size exceeds data size
+prog.cob:10: note: value size is 8
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([Alphanumeric-edited item])
+AT_KEYWORDS([value editing size])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 X-123         PIC BXX VALUE 123.
+       01 X-ABC         PIC BXX VALUE "abc".
+       01 X-MATCH       PIC BXX VALUE " ab".
+       01 X-OVERFLOW    PIC BXX VALUE " abc".
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY prog.cob], [0], [],
+[prog.cob:6: warning: alphanumeric value is expected
+prog.cob:9: warning: value size exceeds data size
+prog.cob:9: note: value size is 4
+])
+
+AT_CLEANUP
+
+
+# 9) TODO
+
+# 10) DONE (tested in syn_redefines.at)
+
+# 11) TODO
+
+# 12) TODO
+
+# 13) TODO
+
+# 14) TODO
+
+# 15) TODO
+
+# 16) TODO
+
+# 17) TODO
+
+# 18) TODO
+
+# 19) TODO
+
+# 20) DONE
+
+# 21) TODO
+
+# 22) TODO
+
+# 23) TODO
+
+# 24) TODO
+
+# 25) TODO
+
+# 26) TODO
+
+# 27) TODO
+
+# 28) TODO
+
+# 29) TODO
+
+
+
+AT_SETUP([Implicit picture from value])
+AT_KEYWORDS([value])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       01 IMPHEAD.
+          05 IMPPIC     VALUE " abc".
+       PROCEDURE        DIVISION.
+           DISPLAY IMPPIC END-DISPLAY
+           STOP RUN.
+])
+
+# Check: should we raise an error without -frelax-syntax-checks?
+#AT_CHECK([$COMPILE_ONLY prog.cob], [1], [],
+#[prog.cob:7: error: PICTURE clause required for 'IMPPIC'
+#])
+
+AT_CHECK([$COMPILE_ONLY -frelax-syntax-checks prog.cob], [0], [],
+[prog.cob:7: warning: defining implicit picture size 4 for 'IMPPIC'
+])
+
+AT_CHECK([$COMPILE_ONLY -frelax-syntax-checks -w prog.cob], [0], [], [])
+
+AT_CLEANUP

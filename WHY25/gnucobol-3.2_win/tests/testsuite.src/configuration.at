@@ -1,0 +1,1012 @@
+## Copyright (C) 2014-2023 Free Software Foundation, Inc.
+## Written by Simon Sobisch
+##
+## This file is part of GnuCOBOL.
+##
+## The GnuCOBOL compiler is free software: you can redistribute it
+## and/or modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation, either version 3 of the
+## License, or (at your option) any later version.
+##
+## GnuCOBOL is distributed in the hope that it will be useful,
+## but WITHOUT ANY WARRANTY; without even the implied warranty of
+## MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+## GNU General Public License for more details.
+##
+## You should have received a copy of the GNU General Public License
+## along with GnuCOBOL.  If not, see <https://www.gnu.org/licenses/>.
+
+### GnuCOBOL Test Suite
+
+
+AT_SETUP([cobc with standard configuration file])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       AUTHOR. tester.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+# default configuration permits this extension
+AT_CHECK([$COMPILE_ONLY prog.cob], [0], [],
+[prog.cob:4: warning: AUTHOR is obsolete in GnuCOBOL
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc dialect features for all -std])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       AUTHOR. tester.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY -std=default prog.cob], [0], [],
+[prog.cob:4: warning: AUTHOR is obsolete in GnuCOBOL
+])
+AT_CHECK([$COMPILE_ONLY -std=cobol85 prog.cob], [0], [],
+[prog.cob:4: warning: AUTHOR is obsolete in COBOL 85
+])
+AT_CHECK([$COMPILE_ONLY -std=cobol2002 prog.cob], [1], [],
+[prog.cob:4: error: AUTHOR does not conform to COBOL 2002
+])
+AT_CHECK([$COMPILE_ONLY -std=cobol2014 prog.cob], [1], [],
+[prog.cob:4: error: AUTHOR does not conform to COBOL 2014
+])
+AT_CHECK([$COMPILE_ONLY -std=xopen prog.cob], [0], [],
+[prog.cob:4: warning: AUTHOR used
+])
+AT_CHECK([$COMPILE_ONLY -std=acu-strict prog.cob], [0], [],
+[prog.cob:4: warning: AUTHOR is obsolete in ACUCOBOL-GT
+])
+AT_CHECK([$COMPILE_ONLY -std=bs2000-strict prog.cob], [1], [],
+[prog.cob:4: error: AUTHOR does not conform to BS2000 COBOL
+])
+AT_CHECK([$COMPILE_ONLY -std=ibm-strict prog.cob], [0], [],
+[prog.cob:4: warning: AUTHOR is obsolete in IBM COBOL
+])
+AT_CHECK([$COMPILE_ONLY -std=mf-strict prog.cob], [0], [],
+[prog.cob:4: warning: AUTHOR is obsolete in Micro Focus COBOL
+])
+AT_CHECK([$COMPILE_ONLY -std=rm-strict prog.cob], [0], [],
+[prog.cob:4: warning: AUTHOR is obsolete in RM-COBOL
+])
+AT_CHECK([$COMPILE_ONLY -std=realia-strict prog.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY -std=mvs-strict prog.cob], [0], [],
+[prog.cob:4: warning: AUTHOR is obsolete in IBM COBOL for MVS & VM
+])
+AT_CHECK([$COMPILE_ONLY -std=gcos-strict prog.cob], [0], [],
+[prog.cob:4: warning: AUTHOR is obsolete in GCOS
+])
+AT_CHECK([$COMPILE_ONLY -std=acu prog.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY -std=bs2000 prog.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY -std=ibm prog.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY -std=mf prog.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY -std=rm prog.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY -std=realia prog.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY -std=mvs prog.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY -std=gcos prog.cob], [0], [], [])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc with configuration file via -std])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       AUTHOR. tester.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+# check if -std loads configuration file and if override works
+AT_CHECK([$COMPILE_ONLY -std=cobol2014 prog.cob], [1], [],
+[prog.cob:4: error: AUTHOR does not conform to COBOL 2014
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc with standard configuration file via -conf])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       AUTHOR. tester.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+# check if override via -conf works
+AT_CHECK([$COMPILE_ONLY -conf=cobol2014.conf prog.cob], [1], [],
+[prog.cob:4: error: AUTHOR does not conform to COBOL 2014
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc with own configuration file via -conf])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([test.conf], [
+include "default.conf"
+name: "Sample Conf"
+comment-paragraphs:                       ok
+])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       AUTHOR. tester.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+# check if override via -conf works and if include works
+AT_CHECK([$COMPILE_ONLY -conf=test.conf prog.cob], [0], [], [])
+
+# check if configuration file loading with full path works
+AT_CHECK([$COMPILE_ONLY \
+-conf="$(_return_path "$(pwd)/test.conf")" prog.cob], [0], [], [])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc configuration: recursive include])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([test.conf], [
+# different line for "include" to check the line number
+include "test2.conf"
+])
+
+AT_DATA([test2.conf], [
+# include in
+# line 4
+include "test3.conf"
+])
+
+AT_DATA([test3.conf], [
+include "test.conf"
+])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY -conf=test.conf prog.cob], [1], [],
+[configuration error:
+test.conf: recursive inclusion
+test3.conf:2: configuration file was included here
+test2.conf:4: configuration file was included here
+test.conf:3: configuration file was included here
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc with -std and -conf])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([test.conf], [
+include "mf.conf"
+name: "Sample Conf"
+comment-paragraphs:                       ok
+])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       AUTHOR. tester.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+# check if override via -conf works and if include works
+AT_CHECK([$COMPILE_ONLY -std=default -conf=test.conf prog.cob], [0], [],
+[configuration warning: test.conf: The previous loaded configuration 'GnuCOBOL' will be discarded.
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc compiler flag on command line])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       AUTHOR. tester.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY -fcomment-paragraphs=ok prog.cob],
+[0], [], [])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc compiler flag on command line (priority)])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([test.conf], [
+include "default.conf"
+name: "Sample Conf"
+comment-paragraphs:   unconformable
+])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       AUTHOR. tester.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+# configuration flags must work
+AT_CHECK([$COMPILE_ONLY \
+-fcomment-paragraphs=ok prog.cob], [0], [], [])
+
+# configuration flag on command line must override all (no matter where it's used)
+AT_CHECK([$COMPILE_ONLY \
+-fcomment-paragraphs=ok -conf=test.conf prog.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY \
+-conf=test.conf -fcomment-paragraphs=ok prog.cob],
+[0], [], [])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc configuration: entries])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+# conf entries must be clean
+AT_CHECK([$COMPILE_ONLY -q \
+-fcomment-paragraphsok prog.cob], [1], [],
+[cobc: unrecognized option '-fcomment-paragraphsok'
+])
+AT_CHECK([$COMPILE_ONLY \
+-fassign-clause=cobol-2002 prog.cob], [1], [],
+[configuration error:
+-fassign-clause=cobol-2002: invalid value 'cobol-2002' for configuration tag 'assign-clause';
+	should be one of the following values: dynamic, external, mf, ibm
+])
+AT_CHECK([$COMPILE_ONLY \
+-freserved-words=default prog.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY \
+-freserved-words=defaults prog.cob], [1], [],
+[configuration error:
+-freserved-words=defaults: Could not access word list for 'defaults'
+defaults.words: No such file or directory
+])
+AT_CHECK([$COMPILE_ONLY \
+-fword-length=thirty prog.cob], [1], [],
+[configuration error:
+-fword-length=thirty: invalid value 'thirty' for configuration tag 'word-length';
+	must be numeric
+])
+AT_CHECK([$COMPILE_ONLY \
+-fstandard-define=99 prog.cob], [1], [],
+[configuration error:
+-fstandard-define=99: invalid value '99' for configuration tag 'standard-define';
+	maximum value: 9
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc configuration: conf missing])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([defunc.conf], [
+include "notthere.conf"
+])
+
+AT_DATA([defunc2.conf], [
+include
+])
+
+AT_CHECK([$COMPILE_ONLY -conf=notthere.conf prog.cob], [1], [],
+[configuration error:
+notthere.conf: No such file or directory
+])
+AT_CHECK([$COMPILE_ONLY -conf=defunc.conf prog.cob], [1], [],
+[configuration error:
+notthere.conf: No such file or directory
+defunc.conf:2: configuration file was included here
+])
+AT_CHECK([$COMPILE_ONLY -conf=defunc2.conf prog.cob], [1], [],
+[configuration error:
+defunc2.conf:2: invalid configuration tag 'include'
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc configuration: conf optional])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([defunc.conf], [
+include "default.conf"
+includeif "notthere.conf"
+])
+
+AT_DATA([test.conf], [
+include "default.conf"
+include "test2.conf"
+])
+
+AT_DATA([test2.conf], [
+name: "Sample Conf"
+comment-paragraphs:                       ok
+])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       AUTHOR. tester.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY -conf=defunc.conf prog.cob], [0], [],
+[prog.cob:4: warning: AUTHOR is obsolete in GnuCOBOL
+])
+AT_CHECK([$COMPILE_ONLY -conf=test.conf prog.cob], [0], [], [])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc configuration: incomplete])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([test.conf], [
+name: "Empty Conf"
+])
+
+# check if incomplete configuration result in error
+AT_CHECK([$COMPILE_ONLY -conf=test.conf prog.cob], [1], [],
+[configuration error:
+test.conf: missing definitions:
+	no definition of 'reserved-words'
+	no definition of 'tab-width'
+	no definition of 'text-column'
+	no definition of 'pic-length'
+	no definition of 'word-length'
+	no definition of 'literal-length'
+	no definition of 'numeric-literal-length'
+	no definition of 'defaultbyte'
+	no definition of 'standard-define'
+	no definition of 'format'
+	no definition of 'binary-size'
+	no definition of 'binary-byteorder'
+	no definition of 'assign-clause'
+	no definition of 'screen-section-rules'
+	no definition of 'dpc-in-data'
+	no definition of 'subscript-check'
+	no definition of 'filename-mapping'
+	no definition of 'pretty-display'
+	no definition of 'binary-truncate'
+	no definition of 'complex-odo'
+	no definition of 'odoslide'
+	no definition of 'init-justify'
+	no definition of 'indirect-redefines'
+	no definition of 'relax-syntax-checks'
+	no definition of 'ref-mod-zero-length'
+	no definition of 'relax-level-hierarchy'
+	no definition of 'select-working'
+	no definition of 'local-implies-recursive'
+	no definition of 'sticky-linkage'
+	no definition of 'move-ibm'
+	no definition of 'perform-osvs'
+	no definition of 'arithmetic-osvs'
+	no definition of 'constant-folding'
+	no definition of 'hostsign'
+	no definition of 'program-name-redefinition'
+	no definition of 'accept-update'
+	no definition of 'accept-auto'
+	no definition of 'console-is-crt'
+	no definition of 'no-echo-means-secure'
+	no definition of 'line-col-zero-default'
+	no definition of 'display-special-fig-consts'
+	no definition of 'binary-comp-1'
+	no definition of 'numeric-pointer'
+	no definition of 'move-non-numeric-lit-to-numeric-is-zero'
+	no definition of 'implicit-assign-dynamic-var'
+	no definition of 'device-mnemonics'
+	no definition of 'xml-parse-xmlss'
+	no definition of 'areacheck'
+	no definition of 'comment-paragraphs'
+	no definition of 'control-division'
+	no definition of 'partial-replace-when-literal-src'
+	no definition of 'memory-size-clause'
+	no definition of 'multiple-file-tape-clause'
+	no definition of 'label-records-clause'
+	no definition of 'value-of-clause'
+	no definition of 'data-records-clause'
+	no definition of 'top-level-occurs-clause'
+	no definition of 'same-as-clause'
+	no definition of 'type-to-clause'
+	no definition of 'usage-type'
+	no definition of 'synchronized-clause'
+	no definition of 'sync-left-right'
+	no definition of 'special-names-clause'
+	no definition of 'goto-statement-without-name'
+	no definition of 'stop-literal-statement'
+	no definition of 'stop-identifier-statement'
+	no definition of 'stop-error-statement'
+	no definition of 'debugging-mode'
+	no definition of 'use-for-debugging'
+	no definition of 'padding-character-clause'
+	no definition of 'next-sentence-phrase'
+	no definition of 'listing-statements'
+	no definition of 'title-statement'
+	no definition of 'entry-statement'
+	no definition of 'move-noninteger-to-alphanumeric'
+	no definition of 'move-figurative-constant-to-numeric'
+	no definition of 'move-figurative-space-to-numeric'
+	no definition of 'move-figurative-quote-to-numeric'
+	no definition of 'odo-without-to'
+	no definition of 'section-segments'
+	no definition of 'alter-statement'
+	no definition of 'call-overflow'
+	no definition of 'numeric-boolean'
+	no definition of 'hexadecimal-boolean'
+	no definition of 'national-literals'
+	no definition of 'hexadecimal-national-literals'
+	no definition of 'national-character-literals'
+	no definition of 'hp-octal-literals'
+	no definition of 'acu-literals'
+	no definition of 'ebcdic-symbolic-characters'
+	no definition of 'word-continuation'
+	no definition of 'not-exception-before-exception'
+	no definition of 'accept-display-extensions'
+	no definition of 'renames-uncommon-levels'
+	no definition of 'larger-redefines'
+	no definition of 'symbolic-constant'
+	no definition of 'constant-78'
+	no definition of 'constant-01'
+	no definition of 'perform-varying-without-by'
+	no definition of 'reference-out-of-declaratives'
+	no definition of 'program-prototypes'
+	no definition of 'call-convention-mnemonic'
+	no definition of 'call-convention-linkage'
+	no definition of 'using-optional'
+	no definition of 'numeric-value-for-edited-item'
+	no definition of 'incorrect-conf-sec-order'
+	no definition of 'define-constant-directive'
+	no definition of 'free-redefines-position'
+	no definition of 'records-mismatch-record-clause'
+	no definition of 'record-delimiter'
+	no definition of 'sequential-delimiters'
+	no definition of 'record-delim-with-fixed-recs'
+	no definition of 'missing-statement'
+	no definition of 'missing-period'
+	no definition of 'zero-length-literals'
+	no definition of 'xml-generate-extra-phrases'
+	no definition of 'continue-after'
+	no definition of 'goto-entry'
+	no definition of 'assign-variable'
+	no definition of 'assign-using-variable'
+	no definition of 'assign-ext-dyn'
+	no definition of 'assign-disk-from'
+	no definition of 'vsam-status'
+	no definition of 'self-call-recursive'
+	no definition of 'record-contains-depending-clause'
+	no definition of 'picture-l'
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([runtime configuration])
+AT_KEYWORDS([configuration misc])
+
+# check if --runtime-conf exits without error
+# don't compare stdout
+AT_CHECK([$COBCRUN --runtime-conf], [0], ignore, [])
+
+# check if --runtime-conf points to a file called "runtime_empty.cfg"
+# use tr to remove newlines and spaces as the path likely is split
+# into two lines
+AT_CHECK([$COBCRUN --runtime-conf | tr -d '\n ' | \
+$GREP "runtime_empty.cfg"], [0], ignore, [])
+AT_CHECK([COB_RUNTIME_CONFIG="" $COBCRUN --runtime-conf | tr -d '\n ' \
+| $GREP "runtime.cfg"],
+[0], ignore, [])
+
+AT_CLEANUP
+
+
+AT_SETUP([runtime configuration file])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([test.cfg], [
+include "test2.cfg"
+])
+
+AT_DATA([test2.cfg], [
+physical_cancel true
+])
+
+AT_DATA([test3.cfg], [
+setenv COB_PHYSICAL_CANCEL=true
+])
+
+
+# verify that default for physical cancel is still "no"
+AT_CHECK([$COBCRUN --runtime-conf | \
+$GREP "COB_PHYSICAL_CANCEL" | $GREP "no" | $GREP "default"], [0], ignore, [])
+
+# verify that override via -c works and if include works
+AT_CHECK([$COBCRUN -c test2.cfg --runtime-conf | \
+$GREP "physical_cancel" | $GREP "yes"], [0], ignore, [])
+AT_CHECK([$COBCRUN -c test.cfg --runtime-conf | \
+$GREP "physical_cancel" | $GREP "yes"], [0], ignore, [])
+AT_CHECK([$COBCRUN -c test3.cfg --runtime-conf | \
+$GREP "COB_PHYSICAL_CANCEL" | $GREP "yes"], [0], ignore, [])
+
+# verify that that long option works
+AT_CHECK([$COBCRUN --config=test3.cfg --runtime-conf | \
+$GREP "COB_PHYSICAL_CANCEL" | $GREP "yes"], [0], ignore, [])
+
+# verify that that environment setting works
+AT_CHECK([COB_RUNTIME_CONFIG=test3.cfg $COBCRUN --runtime-conf | \
+$GREP "COB_PHYSICAL_CANCEL" | $GREP "yes"], [0], ignore, [])
+
+# verify that configuration file loading with full path works
+AT_CHECK([$COBCRUN -c "$(_return_path "$(pwd)/test.cfg")" --runtime-conf],
+[0], ignore, [])
+
+AT_CLEANUP
+
+
+AT_SETUP([runtime configuration: recursive include])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([test.cfg], [
+# different line for "include" to check the line number
+include "test2.cfg"
+])
+
+AT_DATA([test2.cfg], [
+# include in
+# line 4
+include "test3.cfg"
+])
+
+AT_DATA([test3.cfg], [
+include "test.cfg"
+])
+
+AT_CHECK([$COBCRUN -c test.cfg -r], [1], [],
+[configuration error:
+test.cfg: recursive inclusion
+test3.cfg:2: configuration file was included here
+test2.cfg:4: configuration file was included here
+test.cfg:3: configuration file was included here
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([runtime configuration: environment priority])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([test.cfg], [
+physical_cancel true
+])
+
+AT_CHECK([COB_PHYSICAL_CANCEL=false $COBCRUN -c test.cfg --runtime-conf | \
+$GREP "COB_PHYSICAL_CANCEL" | $GREP "no"], [0], ignore, [])
+
+AT_CLEANUP
+
+
+AT_SETUP([runtime configuration: entries])
+AT_KEYWORDS([configuration misc])
+
+AT_CHECK([echo "$PATHSEP"], [0], [;
+], [], [
+
+# Previous test "failed" --> PATHSEP isn't ;
+
+  AT_DATA([defunc.cfg], [
+novar
+physical_cancel notwithme
+load_case  insensitive
+varseq_format big
+sort_chunk 4K
+sort_memory 4G # too big by some byte
+setenv nothing
+sort_chunk
+trace_file /tmp:/temp
+])
+
+# conf entries must be clean
+  AT_CHECK([$COBCRUN -c defunc.cfg --runtime-conf], [1], [],
+[configuration error:
+defunc.cfg:2: unknown configuration tag 'novar'
+defunc.cfg:3: invalid value 'notwithme' for configuration tag 'physical_cancel';
+	should be one of the following values: true, false
+defunc.cfg:4: invalid value 'insensitive' for configuration tag 'load_case';
+	should be one of the following values: LOWER(1), UPPER(2), not set(0)
+defunc.cfg:5: invalid value 'big' for configuration tag 'varseq_format';
+	should be one of the following values: 0, 1, 2, 3
+defunc.cfg:6: invalid value '4K' for configuration tag 'sort_chunk';
+	minimum value: 131072
+defunc.cfg:7: invalid value '4G' for configuration tag 'sort_memory';
+	maximum value: 4294967294
+defunc.cfg:8: WARNING - 'setenv nothing' without a value - ignored!
+defunc.cfg:9: WARNING - 'sort_chunk' without a value - ignored!
+defunc.cfg:10: invalid value '/tmp:/temp' for configuration tag 'trace_file';
+	should not contain ':'
+])
+]
+,
+[
+# Previous test "passed" --> PATHSEP is ;
+
+  AT_DATA([defunc.cfg], [
+novar
+physical_cancel notwithme
+load_case  insensitive
+varseq_format big
+sort_chunk 4K
+sort_memory 4G # too big by some byte
+setenv nothing
+sort_chunk
+trace_file C:\tmp;C:\temp
+])
+
+# conf entries must be clean
+  AT_CHECK([$COBCRUN -c defunc.cfg --runtime-conf], [1], [],
+[configuration error:
+defunc.cfg:2: unknown configuration tag 'novar'
+defunc.cfg:3: invalid value 'notwithme' for configuration tag 'physical_cancel';
+	should be one of the following values: true, false
+defunc.cfg:4: invalid value 'insensitive' for configuration tag 'load_case';
+	should be one of the following values: LOWER(1), UPPER(2), not set(0)
+defunc.cfg:5: invalid value 'big' for configuration tag 'varseq_format';
+	should be one of the following values: 0, 1, 2, 3
+defunc.cfg:6: invalid value '4K' for configuration tag 'sort_chunk';
+	minimum value: 131072
+defunc.cfg:7: invalid value '4G' for configuration tag 'sort_memory';
+	maximum value: 4294967294
+defunc.cfg:8: WARNING - 'setenv nothing' without a value - ignored!
+defunc.cfg:9: WARNING - 'sort_chunk' without a value - ignored!
+defunc.cfg:10: invalid value 'C:\tmp;C:\temp' for configuration tag 'trace_file';
+	should not contain ';'
+])
+]
+)
+
+AT_CLEANUP
+
+
+AT_SETUP([runtime configuration: conf missing])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([defunc.cfg], [
+include "notthere.cfg"
+])
+
+AT_DATA([defunc2.cfg], [
+include
+])
+
+AT_CHECK([$COBCRUN -c notthere.cfg --runtime-conf], [1], [],
+[configuration error:
+notthere.cfg: No such file or directory
+])
+AT_CHECK([$COBCRUN -c defunc.cfg --runtime-conf], [1], [],
+[configuration error:
+notthere.cfg: No such file or directory
+defunc.cfg:2: configuration file was included here
+])
+
+AT_CHECK([$COBCRUN -c defunc2.cfg --runtime-conf], [1], [],
+[configuration error:
+defunc2.cfg:2: 'include' without a value!
+])
+
+AT_CLEANUP
+
+
+AT_SETUP([runtime configuration: conf optional])
+AT_KEYWORDS([configuration misc])
+
+AT_DATA([defunc.cfg], [
+include "runtime_empty.cfg"
+includeif "notthere.cfg"
+])
+
+AT_CHECK([$COBCRUN -c defunc.cfg --runtime-conf], [0], ignore, [])
+
+AT_CLEANUP
+
+
+AT_SETUP([runtime configuration: strings and environment])
+AT_KEYWORDS([configuration environment variable])
+
+AT_CHECK([unset greet name ; \
+   TESTME="this is a test" \
+   COB_EXIT_MSG='${greet:Bye} ${name:-user}, ${TESTME}' \
+   $COBCRUN --runtime-conf | \
+$GREP "COB_EXIT_MSG" | $GREP "Bye user, this is a test"], [0], ignore, [])
+AT_CHECK([$COBCRUN --runtime-conf | \
+$GREP "COB_EXIT_MSG" | $GREP "end of program, please press a key to exit"], [0], ignore, [])
+
+AT_CLEANUP
+
+
+AT_SETUP([validation of COB_CONFIG_DIR])
+AT_KEYWORDS([runtime configuration environment variable])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+AT_CHECK([echo "$PATHSEP"], [0], [;
+], [],
+
+# Previous test "failed" --> PATHSEP isn't ;
+
+AT_CHECK([COB_CONFIG_DIR=".:/temp:/tmp" \
+$COMPILE prog.cob], [1], [],
+[cobc: environment variable 'COB_CONFIG_DIR' is '.:/temp:/tmp'; should not contain ':'
+configuration error:
+./default.conf: No such file or directory
+cobc: error: please check environment variables as noted above
+])
+
+,
+
+# Previous test "passed" --> PATHSEP is ;
+
+AT_CHECK([COB_CONFIG_DIR=".;C:\temp;C:\tmp" \
+$COMPILE prog.cob], [1], [],
+[cobc: environment variable 'COB_CONFIG_DIR' is '.;C:\temp;C:\tmp'; should not contain ';'
+configuration error:
+.\default.conf: No such file or directory
+cobc: error: please check environment variables as noted above
+])
+
+)
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc configuration: source format])
+AT_KEYWORDS([configuration misc format])
+
+AT_DATA([fixed.cob], [
+      *Example prog in fixed format (the default)
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      fixed.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+      /
+       PROCEDURE        DIVISION.
+      D    DISPLAY 'START'
+           DISPLAY '     20        30        40         50       60    '
+           DISPLAY '     20        30        40         50       60     
+      -            '    70'
+      D    DISPLAY 'STOP'
+           STOP RUN.
+])
+
+AT_CHECK([$COMPILE_ONLY -fformat=unknown fixed.cob], [1], [],
+[configuration error:
+-fformat=unknown: invalid value 'unknown' for configuration tag 'format';
+	should be one of the following values: FIXED, FREE, COBOL85, VARIABLE, XOPEN, XCARD, CRT, TERMINAL, COBOLX
+])
+AT_CHECK([$COMPILE_ONLY -fixed fixed.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY -fformat=fixed fixed.cob], [0], [], [])
+AT_CHECK([$COMPILE_ONLY -fformat=cobol85 fixed.cob], [0], [], [])
+
+AT_DATA([wide.cob], [
+      *Example prog in fixed format with wider record length
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      wide.
+       DATA             DIVISION.
+       WORKING-STORAGE  SECTION.
+      /
+       PROCEDURE        DIVISION.
+           DISPLAY '     20        30        40         50       60         70 '
+           DISPLAY '     20        30        40         50       60         70
+      -            '        80'
+           STOP RUN.
+])
+AT_CHECK([$COMPILE_ONLY -fformat=fixed wide.cob], [1], [],
+[wide.cob:10: error: continuation character expected
+wide.cob:9: error: invalid literal: '  ...'
+wide.cob:9: note: missing terminating ' character
+wide.cob:9: warning: optional period used
+])
+AT_CHECK([$COMPILE_ONLY -fformat=cobol85 wide.cob], [1], [],
+[wide.cob:10: error: continuation character expected
+wide.cob:9: error: invalid literal: '  ...'
+wide.cob:9: note: missing terminating ' character
+wide.cob:9: warning: optional period used
+])
+AT_CHECK([$COMPILE_ONLY -ftext-column=80 wide.cob], [0], [], [])
+
+AT_CLEANUP
+
+
+AT_SETUP([cobc configuration: ebcdic-table])
+AT_KEYWORDS([configuration misc ebcdic COLLATING SEQUENCE ALPHABET collation])
+
+AT_DATA([prog.cob], [
+       IDENTIFICATION   DIVISION.
+       PROGRAM-ID.      prog.
+       ENVIRONMENT DIVISION.
+       CONFIGURATION SECTION.
+           OBJECT-COMPUTER.
+             PROGRAM COLLATING SEQUENCE IS an-ebcdic.
+       SPECIAL-NAMES.
+           ALPHABET an-ebcdic IS EBCDIC.
+       PROCEDURE        DIVISION.
+           STOP RUN.
+])
+
+# Note: these tests need compile to C, as -febcdic-table handling is postponed to codegen
+
+AT_CHECK([$COMPILE -C -febcdic-table=default prog.cob], [0], [], [])
+AT_CHECK([$COMPILE -C -febcdic-table=alternate prog.cob], [0], [], [])
+AT_CHECK([$COMPILE -C -febcdic-table=ebcdic500_ascii7bit prog.cob], [0], [], [])
+AT_CHECK([$COMPILE -C -febcdic-table=ebcdic500_ascii8bit prog.cob], [0], [], [])
+AT_CHECK([$COMPILE -C -febcdic-table=ebcdic500_latin1 prog.cob], [0], [], [])
+AT_CHECK([$COMPILE -C -febcdic-table=unknown prog.cob], [1], [],
+[libcob: error: can't open translation table 'unknown'
+cobc: error: invalid parameter: -febcdic-table
+])
+
+AT_DATA([valid.ttbl], [
+000102039C09867F978D8E0B0C0D0E0F101112139D8508871819928F1C1D1E1F80818283840A171B
+88898A8B8C050607909116939495960498999A9B14159E1A20A0E2E4E0E1E3E5E7F15B2E3C282B21
+26E9EAEBE8EDEEEFECDF5D242A293B5E2D2FC2C4C0C1C3C5C7D1A62C255F3E3FF8C9CACBC8CDCECF
+CC603A2340273D22D8616263646566676869ABBBF0FDFEB1B06A6B6C6D6E6F707172AABAE6B8C6A4
+B57E737475767778797AA1BFD0DDDEAEA2A3A5B7A9A7B6BCBDBEAC7CAFA8B4D77B41424344454647
+4849ADF4F6F2F3F57D4A4B4C4D4E4F505152B9FBFCF9FAFF5CF7535455565758595AB2D4D6D2D3D5
+30313233343536373839B3DBDCD9DA9F
+])
+
+AT_DATA([valid2.ttbl], [
+# we may have any comments in here
+00 01 02 03 9C 09 86 7F 97 8D 8E 0B 0C 0D 0E 0F 10 11 12 13 9D 85 08 87 18 19 92
+8F 1C 1D 1E 1F 80 81 82 83 84 0A 17 1B 88 89 8A 8B 8C 05 06 07 90 91 16 93 94 95
+
+# even within 
+
+96 04 98 99 9A 9B 14 15 9E 1A 20 A0 E2 E4 E0 E1 E3 E5 E7 F1 5B 2E 3C 28 2B 21 26
+E9 EA EB E8 ED EE EF EC DF 5D 24 2A 29 3B 5E 2D 2F C2 C4 C0 C1 C3 C5 C7 D1 A6 2C
+25 5F 3E 3F F8 C9 CA CB C8 CD CE CF CC 60 3A 23 40 27 3D 22 D8 61 62 63 64 65 66
+67 68 69 AB BB F0 FD FE B1 B0 6A 6B 6C 6D 6E 6F 70 71 72 AA BA E6 B8 C6 A4 B5 7E
+73 74 75 76 77 78 79 7A A1 BF D0 DD DE AE A2 A3 A5 B7 A9 A7 B6 BC BD BE AC 7C AF
+A8 B4 D7 7B 41 42 43 44 45 46 47 48 49 AD F4 F6 F2 F3 F5 7D 4A 4B 4C 4D 4E 4F 50
+51 52 B9 FB FC F9 FA FF 5C F7 53 54 55 56 57 58 59 5A B2 D4 D6 D2 D3 D5 30 31 32
+33 34 35 36 37 38 39 B3 DB DC D9 DA 9F 
+])
+
+AT_CHECK([$COMPILE -C -febcdic-table=./valid.ttbl prog.cob], [0], [], [])
+AT_CHECK([$COMPILE -C -febcdic-table=./valid2.ttbl prog.cob], [0], [], [])
+
+AT_DATA([invalid.ttbl], [
+000102039C09867F978D8E0B0C0D0E0F101112139D8508871819928F1C1D1E1F80818283840A171B
+88898A8B8C050607909116939495960498999A9B14159E1A20A0E2E4E0E1E3E5E7F15B2E3C282B21
+26E9EAEBE8EDEEEFECDF5D242A293B5E2D2FC2C4C0C1C3C5C7D1A62X255F3E3FF8C9CACBC8CDCECF
+CC60YA2340273D22D8616263646566676869ABBBF0FDFEB1B06A6B6C6D6E6F707172AABAE6B8C6A4
+B57E737475767778797AA1BFD0DDDEAEA2A3A5B7A9A7B6BCBDBEAC7CAFA8B4D77B41424344454647
+4849ADF4F6F2F3F57D4A4B4C4D4E4F505152B9FBFCF9FAFF5CF7535455565758595AB2D4D6D2D3D5
+30313233343536373839B3DBDCD9DA9F
+])
+
+AT_CHECK([$COMPILE -C -febcdic-table=./invalid.ttbl prog.cob], [1], [],
+[libcob: error: errors in translation table './invalid.ttbl':
+libcob: error: invalid hex byte on line 4: '2X'
+libcob: error: invalid hex byte on line 5: 'YA'
+cobc: error: invalid parameter: -febcdic-table
+])
+
+AT_DATA([shorter.ttbl], [
+0102039C09867F978D8E0B0C0D0E0F101112139D8508871819928F1C1D1E1F80818283840A171B88
+898A8B8C050607909116939495960498999A9B14159E1A20A0E2E4E0E1E3E5E7F15B2E3C282B2126
+E9EAEBE8EDEEEFECDF5D242A293B5E2D2FC2C4C0C1C3C5C7D1A62C255F3E3FF8C9CACBC8CDCECFCC
+603A2340273D22D8616263646566676869ABBBF0FDFEB1B06A6B6C6D6E6F707172AABAE6B8C6A4B5
+7E737475767778797AA1BFD0DDDEAEA2A3A5B7A9A7B6BCBDBEAC7CAFA8B4D77B4142434445464748
+49ADF4F6F2F3F57D4A4B4C4D4E4F505152B9FBFCF9FAFF5CF7535455565758595AB2D4D6D2D3D530
+313233343536373839B3DBDCD9DA9F
+])
+
+AT_CHECK([$COMPILE -C -febcdic-table=./shorter.ttbl prog.cob], [1], [],
+[libcob: error: not enough data in translation table './shorter.ttbl'
+cobc: error: invalid parameter: -febcdic-table
+])
+
+AT_DATA([shorter_longer.ttbl], [
+000102039C09867F978D8E0B0C0D0E0F101112139D8508871819928F1C1D1E1F80818283840A171B
+88898A8B8C050607909116939495960498999A9B14159E1A20A0E2E4E0E1E3E5E7F15B2E3C282B21
+26E9EAEBE8EDEEEFECDF5D242A293B5E2D2FC2C4C0C1C3C5C7D1A62C255F3E3FF8C9CACBC8CDCECF
+CC603A2340273D22D8616263646566676869ABBBF0FDFEB1B06A6B6C6D6E6F707172AABAE6B8C6A4
+B57E737475767778797AA1BFD0DDDEAEA2A3A5B7A9A7B6BCBDBEAC7CAFA8B4D77B41424344454647
+4849ADF4F6F2F3F57D4A4B4C4D4E4F505152B9FBFCF9FAFF5CF7535455565758595AB2D4D6D2D3D5
+30313233343536373839B3DBDCD9DA9FFF
+])
+
+AT_CHECK([$COMPILE -C -febcdic-table=./shorter_longer.ttbl prog.cob], [1], [],
+[libcob: error: either not enough or too much data in translation table './shorter_longer.ttbl'
+cobc: error: invalid parameter: -febcdic-table
+])
+
+AT_DATA([longer.ttbl], [
+000102039C09867F978D8E0B0C0D0E0F101112139D8508871819928F1C1D1E1F80818283840A171B
+88898A8B8C050607909116939495960498999A9B14159E1A20A0E2E4E0E1E3E5E7F15B2E3C282B21
+26E9EAEBE8EDEEEFECDF5D242A293B5E2D2FC2C4C0C1C3C5C7D1A62C255F3E3FF8C9CACBC8CDCECF
+CC603A2340273D22D8616263646566676869ABBBF0FDFEB1B06A6B6C6D6E6F707172AABAE6B8C6A4
+B57E737475767778797AA1BFD0DDDEAEA2A3A5B7A9A7B6BCBDBEAC7CAFA8B4D77B41424344454647
+4849ADF4F6F2F3F57D4A4B4C4D4E4F505152B9FBFCF9FAFF5CF7535455565758595AB2D4D6D2D3D5
+30313233343536373839B3DBDCD9DA9F
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF
+])
+
+AT_CHECK([$COMPILE -C -febcdic-table=./longer.ttbl prog.cob], [1], [],
+[libcob: error: too much data in translation table './longer.ttbl'
+cobc: error: invalid parameter: -febcdic-table
+])
+
+AT_CLEANUP

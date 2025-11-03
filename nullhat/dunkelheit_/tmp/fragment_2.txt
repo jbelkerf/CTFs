@@ -1,0 +1,5 @@
+// Codec information
+// Format: H.264
+// Bitrate: 2500 kbps
+// Audio: AAC 44.1kHz
+// Duration: 05:47

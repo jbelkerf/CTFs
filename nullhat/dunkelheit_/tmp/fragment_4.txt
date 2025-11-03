@@ -1,0 +1,4 @@
+// Compression analysis
+// Ratio: 87.3%%
+// Original size: 11735236568732502828 bytes
+// Compressed: 10902907165307736935 bytes

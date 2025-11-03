@@ -1,0 +1,6 @@
+// Encryption seed
+// Algorithm: AES-256
+// Init vector: 370932268472998
+// Key derivation: PBKDF2
+// Checksum prefix: 0x2866
+// Iterations: 10000

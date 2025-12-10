@@ -1,0 +1,3 @@
+gcc --static -nostdlib -o read read_flag.s 
+
+objcopy --dump-section .text=shellcode-raw read
